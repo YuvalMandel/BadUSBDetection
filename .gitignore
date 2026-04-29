@@ -1,0 +1,33 @@
+# ─── Git LFS tracks these (binary model files) ───────────────────────────────
+# Run: git lfs track "*.pth" "*.npy" "*.npz" "*.pkl"
+# Then: git add .gitattributes  (created by git lfs track)
+
+# ─── Generated data (large, not committed) ────────────────────────────────────
+dataset_generator/Synthetic_Bots/
+dataset_generator/Synthetic_Bots_test/
+dataset_generator/Balanced_Humans/
+dataset_generator/Balanced_Humans_test/
+dataset_generator/s2
+
+# ─── Intermediate data files ──────────────────────────────────────────────────
+MLP/train_dataset.csv
+MLP/val_dataset.csv
+MLP/test_dataset.csv
+MLP/train_final.csv
+GRU/rnn_dataset*.pt
+HTM/windows_cache*.pkl
+
+# ─── SLURM logs ───────────────────────────────────────────────────────────────
+logs/
+
+# ─── Python cache ────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# ─── OS / editor noise ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

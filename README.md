@@ -1,2 +1,241 @@
-# BadUSBDetection
-Final project for Hardware security class, using side-channel analysis on keyboard bio-metrics to detect BadUSB attacks
+# BadUSB Keyboard Detector
+
+Side-channel detector for BadUSB-style keyboard attacks, using keystroke biometrics (dwell time, flight time, QWERTY-distance statistics). Three independent AI engines are integrated into a live GUI application:
+
+| Engine | Architecture | Features |
+|--------|-------------|---------|
+| MLP | Feedforward (17-feature window) | Dwell/flight stats + polynomial Fitts'-Law error |
+| GRU | 2-layer recurrent (sequence) | Raw dwell + flight time series |
+| HTM | Hierarchical Temporal Memory (anomaly) | 21-dim stats SDR + last-key identity SDR |
+
+## Dataset
+
+This project uses the **University at Buffalo (UB) Keystroke Biometric Dataset**.  
+Access must be requested from the dataset maintainers:  
+**https://www.buffalo.edu/cubs/research/datasets/ub-dataset.html**
+
+Download and place the dataset at `../UB_keystroke_dataset/` relative to this repo root, so the directory structure is:
+
+```
+parent_dir/
+    BadUSBDetection/        ← this repo
+    UB_keystroke_dataset/
+        s0/rotation/
+        s1/rotation/
+        s2/rotation/
+```
+
+---
+
+## Installation
+
+### 1. Python environment
+
+Create and activate a conda environment (Python 3.10+):
+
+```bash
+conda create -n badusb python=3.10
+conda activate badusb
+```
+
+Install common dependencies:
+
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121  # GPU
+# or: pip install torch  # CPU only
+pip install numpy scipy scikit-learn matplotlib seaborn joblib optuna tqdm pynput
+```
+
+### 2. HTM Core (from source — pip does NOT work)
+
+The HTM engine requires `htm.core`, which must be compiled from the Numenta community source.
+Do **not** use `pip install htm.core` — the PyPI package is outdated and missing bindings.
+
+```bash
+# 1. Install build dependencies
+conda install -c conda-forge cmake boost
+
+# 2. Clone and build htm.core
+git clone https://github.com/htm-community/htm.core.git
+cd htm.core
+pip install .   # compiles C++ bindings (~5–15 min)
+cd ..
+```
+
+If the build fails, check the [htm.core build docs](https://github.com/htm-community/htm.core#building-from-source) for your OS. The MLP and GRU engines work without HTM installed — the GUI disables the HTM button gracefully.
+
+### 3. Verify
+
+```bash
+python -c "from htm.bindings.sdr import SDR; print('HTM OK')"
+python -c "import torch; print('PyTorch:', torch.__version__)"
+```
+
+---
+
+## Running the Live Detector (existing models)
+
+Pre-trained models are already included in the repository (tracked via Git LFS):
+
+```
+MLP/badusb_model_fullkey.pth       — MLP weights
+MLP/scaler_params_fullkey.npy      — MLP feature normalizer
+MLP/reference_pool.npz             — KS/Wasserstein reference windows
+MLP/poly_regressor.pkl             — Polynomial Fitts'-Law regressor
+results/MLP/mlp_best_hps_fullkey.json
+
+GRU/gru_model_fullkey.pth          — GRU weights
+GRU/rnn_scaler_params_fullkey.npy  — GRU normalizer
+results/GRU/gru_best_hps_fullkey.json
+
+HTM/htm_model_fullkey.pkl          — HTM model (SP + TM + encoder + AnomalyLikelihood)
+```
+
+**Git LFS setup** (required after cloning, to download the binary model files):
+
+```bash
+git lfs install
+git lfs pull
+```
+
+**Launch the GUI:**
+
+```bash
+python BadUSBDetector/detector.py
+```
+
+The GUI shows a traffic-light indicator:
+- **Green** — human typing detected
+- **Yellow** — elevated anomaly score (suspicious)
+- **Red** — BadUSB detected; click "RESET ALARM" to resume monitoring
+
+Switch between MLP, GRU, and HTM engines at runtime using the radio buttons.
+
+---
+
+## Training on a SLURM Cluster
+
+All SLURM scripts are in `slurm/`. They assume the `htm_keyboard_1` conda environment and Newton-style paths. Adapt `ENV_NAME` and partition/account lines for your cluster.
+
+### Full pipeline (data → train all three models)
+
+```bash
+cd <repo-root>
+bash slurm/full_pipeline.sh [--mode full] [--search] [--n-configs 128]
+```
+
+Options:
+- `--mode full` — use all keystroke data (recommended; default is `partial`)
+- `--search` — run Optuna HP search for MLP and GRU (~50 trials each)
+- `--n-configs N` — number of random HTM configs to search (default 128)
+
+The pipeline submits jobs with SLURM dependency chaining automatically.
+
+### Fullkey training (best-known HPs, recommended)
+
+If you already have HP search results:
+
+```bash
+# MLP
+sbatch slurm/fullkey_mlp.sh
+
+# GRU
+sbatch slurm/fullkey_gru.sh
+
+# HTM (trains best config on all data)
+sbatch slurm/fullkey_htm.sh
+```
+
+### Collect HTM results after HP search
+
+```bash
+sbatch slurm/collect_htm_fullkey.sh
+```
+
+This evaluates all completed HTM configs, ranks them, and writes `results/HTM/leaderboard_fullkey.txt`.
+
+---
+
+## Single-Model Training (local or interactive)
+
+### MLP
+
+```bash
+# 1. Generate data
+cd dataset_generator
+python bot_generator.py  -o Synthetic_Bots      -f 100 -e 200
+python bot_generator.py  -o Synthetic_Bots_test -f  20 -e 200
+python human_generator.py -o Balanced_Humans      -f 124 -l 80 -e 1
+python human_generator.py -o Balanced_Humans_test -f  24 -l 80 -e 0
+cd ..
+python split_persons.py --bots-dir dataset_generator/Synthetic_Bots \
+    --ub-dir ../UB_keystroke_dataset --sessions s0 s1 s2 --tasks 1
+
+# 2. Train regressor
+cd MLP/regressor
+python regressor_train.py -hu ../../dataset_generator/Balanced_Humans -m poly_regressor.pkl
+cp poly_regressor.pkl ../
+cd ..
+
+# 3. Feature extraction
+python dataset_csv_generator.py --split-json ../data_split.json --mode full --tag fullkey
+
+# 4. HP search (optional, ~50 trials)
+python model_training.py --split-json ../data_split.json --mode full --tag fullkey --search --n-configs 50
+
+# 5. Final training with best HPs
+python model_training.py --split-json ../data_split.json --mode full --tag fullkey \
+    --hps-json ../results/MLP/mlp_best_hps_fullkey.json
+```
+
+### GRU
+
+```bash
+# From repo root — requires data_split.json (see MLP step 1 above)
+cd GRU
+python translate_to_tensors.py --split-json ../data_split.json --mode full --tag fullkey
+
+# HP search (optional)
+python train_gru.py --split-json ../data_split.json --mode full --tag fullkey \
+    --search --n-configs 50
+
+# Final training with best HPs
+python train_gru.py --split-json ../data_split.json --mode full --tag fullkey \
+    --hps-json ../results/GRU/gru_best_hps_fullkey.json
+```
+
+### HTM
+
+HTM training uses a two-step random HP search:
+
+```bash
+# 1. Prepare data (windows cache — run once)
+python HTM/htm_prepare_data.py --tag fullkey
+
+# 2. Generate random configs
+python HTM/htm_generate_configs.py --n-configs 128
+
+# 3. Submit SLURM array (runs one job per config)
+sbatch slurm/fullkey_htm.sh   # or submit the generated slurm/htm_submit_array.sh
+
+# 4. After all jobs finish, collect results and evaluate best model on test set
+python HTM/htm_collect_results.py --tag fullkey --top 20
+
+# 5. (Optional) Retrain the single best config with unlimited data
+python HTM/htm_train.py \
+    --config HTM/configs/config_NNNN.json \
+    --cache  HTM/windows_cache_fullkey.pkl \
+    --tag    fullkey
+```
+
+The `htm_collect_results.py` script evaluates the best val-F1 config on the test split and writes `results/HTM/final_test_results_fullkey.json` and a confusion matrix plot.
+
+---
+
+## Results (pre-trained fullkey models)
+
+| Model | Val F1 | Test F1 |
+|-------|--------|---------|
+| MLP   | 0.8817 | 0.8657  |
+| GRU   | 0.9474 | 0.9524  |
+| HTM (cfg_0449) | 0.7333 | 0.7143 |

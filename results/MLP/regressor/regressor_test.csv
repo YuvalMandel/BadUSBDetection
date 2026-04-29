@@ -1,0 +1,3 @@
+Label,Transitions_Processed,Mean_Error_ms,Median_Error_ms,Std_Error_ms
+HUMANS,462,13941.96,122.21,85821.96
+BOTS,1266,65213.07,1221.12,237895.74
