@@ -40,10 +40,14 @@ python3 -m venv .venv
 source .venv/bin/activate        # Linux / macOS / WSL
 # .venv\Scripts\activate         # Windows (cmd/PowerShell)
 
-# 2. Install all dependencies in one step
+# 2. Bootstrap pip into the venv (needed on Ubuntu 24.04 / Debian 12+ / WSL)
+#    Skip this step if `pip --version` already works after activation.
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+
+# 3. Install all dependencies in one step
 pip install -r requirements.txt
 
-# 3. GPU PyTorch (optional — skip if CPU-only)
+# 4. GPU PyTorch (optional — skip if CPU-only)
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 
