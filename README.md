@@ -29,46 +29,62 @@ parent_dir/
 
 ## Installation
 
-### 1. Python environment
-
-Create and activate a conda environment (Python 3.10+):
+### Option A — Python venv (recommended)
 
 ```bash
+# 1. Create and activate a virtual environment (Python 3.10+)
+python3 -m venv .venv
+source .venv/bin/activate        # Linux / macOS
+# .venv\Scripts\activate         # Windows
+
+# 2. Install all dependencies in one step
+pip install -r requirements.txt
+
+# 3. GPU PyTorch (optional — skip if CPU-only)
+#    Replace the torch line above by running:
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+```
+
+### Option B — Conda
+
+```bash
+# 1. Create and activate a conda environment
 conda create -n badusb python=3.10
 conda activate badusb
+
+# 2. Install all dependencies
+pip install -r requirements.txt
+
+# 3. GPU PyTorch (optional)
+pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 
-Install common dependencies:
+> `requirements.txt` lists every dependency except `htm.core`, which needs a separate build step (see below). MLP and GRU work with just `requirements.txt`.
+
+### HTM Core (from source — pip does NOT work)
+
+The HTM engine requires `htm.core`, which must be compiled from the Numenta community source.  
+Do **not** use `pip install htm.core` — the PyPI package is outdated and missing the C++ bindings.
 
 ```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121  # GPU
-# or: pip install torch  # CPU only
-pip install numpy scipy scikit-learn matplotlib seaborn joblib optuna tqdm pynput
-```
+# Build dependencies
+# venv: pip install cmake  OR  system: sudo apt install cmake libboost-all-dev
+# conda: conda install -c conda-forge cmake boost
 
-### 2. HTM Core (from source — pip does NOT work)
-
-The HTM engine requires `htm.core`, which must be compiled from the Numenta community source.
-Do **not** use `pip install htm.core` — the PyPI package is outdated and missing bindings.
-
-```bash
-# 1. Install build dependencies
-conda install -c conda-forge cmake boost
-
-# 2. Clone and build htm.core
 git clone https://github.com/htm-community/htm.core.git
 cd htm.core
 pip install .   # compiles C++ bindings (~5–15 min)
 cd ..
 ```
 
-If the build fails, check the [htm.core build docs](https://github.com/htm-community/htm.core#building-from-source) for your OS. The MLP and GRU engines work without HTM installed — the GUI disables the HTM button gracefully.
+If the build fails, see the [htm.core build docs](https://github.com/htm-community/htm.core#building-from-source).  
+The MLP and GRU engines work without HTM — the GUI disables the HTM button gracefully if the import fails.
 
-### 3. Verify
+### Verify
 
 ```bash
-python -c "from htm.bindings.sdr import SDR; print('HTM OK')"
-python -c "import torch; print('PyTorch:', torch.__version__)"
+python3 -c "import torch; print('PyTorch:', torch.__version__)"
+python3 -c "from htm.bindings.sdr import SDR; print('HTM OK')"
 ```
 
 ---

@@ -1,0 +1,31 @@
+# BadUSB Detector — Python dependencies
+# Install with: pip install -r requirements.txt
+#
+# NOTE: htm.core is NOT listed here — it must be built from source.
+# See README.md § "HTM Core (from source)" for instructions.
+
+# Deep learning
+torch>=2.0
+# For GPU (CUDA 12.1), replace the line above with:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# Scientific / ML
+numpy>=1.24
+scipy>=1.10
+scikit-learn>=1.3
+pandas>=2.0
+joblib>=1.3
+optuna>=3.0
+
+# Plotting
+matplotlib>=3.7
+seaborn>=0.12
+
+# Training utilities
+tqdm>=4.65
+
+# Live detector GUI + keyboard capture
+pynput>=1.7
+
+# BadUSB emulator (Orange Pi / UART communication)
+pyserial>=3.5
