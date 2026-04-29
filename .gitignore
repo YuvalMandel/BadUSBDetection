@@ -26,6 +26,10 @@ __pycache__/
 *.pyo
 .pytest_cache/
 
+# ─── Report document (not committed) ─────────────────────────────────────────
+*.docx
+*.doc
+
 # ─── OS / editor noise ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

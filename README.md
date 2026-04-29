@@ -239,3 +239,89 @@ The `htm_collect_results.py` script evaluates the best val-F1 config on the test
 | MLP   | 0.8817 | 0.8657  |
 | GRU   | 0.9474 | 0.9524  |
 | HTM (cfg_0449) | 0.7333 | 0.7143 |
+
+---
+
+## BadUSB Emulator
+
+The `BadUSBemulator/` directory contains a hardware-software platform for emulating malicious USB HID attacks. It is used to test the detector against realistic attack profiles without a real BadUSB device.
+
+### Hardware
+
+![BadUSB Emulator Setup](BadUSBEmulatorSetup.png)
+
+| Component | Role |
+|-----------|------|
+| **Orange Pi Zero 3** (host controller) | Runs `BadUSBemulator.py` — parses the payload script, generates keystroke timing arrays, and sends press/release commands over UART. Accessed via SSH. |
+| **Arduino Pro Micro** (ATmega32U4) | Connected to the target PC via USB. Receives UART commands from the Orange Pi and injects them as real HID keyboard events using the Arduino `Keyboard.h` library. |
+
+The Orange Pi operates at 3.3V logic; the Arduino at 5V. The UART link between them (TX/RX/GND) bridges these two voltage levels. The Arduino's USB port appears to the target PC as a standard keyboard.
+
+### Setup
+
+**1. Flash the Arduino firmware**
+
+Open `BadUSBemulator/AtmegaKeyboard.cpp` in the Arduino IDE (or `arduino-cli`), select board **Arduino Pro Micro (ATmega32U4)**, and upload. The sketch listens on `Serial1` at 115200 baud for `P,<keycode>` (press) and `R,<keycode>` (release) commands.
+
+**2. Wire Orange Pi → Arduino**
+
+```
+Orange Pi TX  →  Arduino RX  (Serial1)
+Orange Pi RX  →  Arduino TX  (Serial1)
+GND           →  GND
+```
+
+Connect the Arduino USB to the **target PC** (the machine being monitored).
+
+**3. Install Python dependencies on Orange Pi**
+
+```bash
+pip install pyserial numpy
+```
+
+**4. Adjust the serial port**
+
+Edit `BadUSBemulator/BadUSBemulator.py` and set `UART_PORT` to match the device on your Orange Pi (default: `/dev/ttyUSB0`):
+
+```python
+UART_PORT = "/dev/ttyUSB0"
+```
+
+### Running an attack
+
+```bash
+python3 BadUSBemulator/BadUSBemulator.py BadUSBemulator/attack_example.txt
+```
+
+You will be prompted to choose an attack profile:
+
+| # | Profile | Description |
+|---|---------|-------------|
+| 1 | Machine Gun | Near-zero delays, minimal variance — pure speed |
+| 2 | The Robot | Perfectly uniform timing between every keystroke |
+| 3 | Gaussian Faker | Normal-distributed delays that mimic human typing |
+| 4 | Uniform Jitter | Random delays uniformly distributed within set bounds |
+| 5 | Burst Mode | Fast bursts of keystrokes separated by longer pauses |
+
+After selecting a profile you can either use random parameters (press `n`) or enter custom values (press `y`).
+
+### Payload scripting syntax
+
+Attack scripts (like `attack_example.txt`) use a simple format:
+
+| Syntax | Meaning | Example |
+|--------|---------|---------|
+| Plain text | Typed character-by-character with attack timing | `whoami` |
+| `delay(X)` | Hard pause for X milliseconds (OS wait, e.g. app launch) | `delay(1500)` |
+| `[KEY]` | Special or modifier key | `[ENTER]`, `[TAB]`, `[ESC]`, `[F5]` |
+| `[KEY1+KEY2]` | Key combination (all pressed together) | `[CTRL+ALT+t]`, `[CTRL+c]` |
+
+Supported special keys: `[ENTER]`, `[SPACE]`, `[TAB]`, `[ESC]`, `[DELETE]`, `[PTRSCR]`, `[CTRL]`, `[ALT]`, `[SHIFT]`, `[WINDOW]`, `[F1]`–`[F12]`.
+
+**Example payload** (`attack_example.txt`):
+```
+[CTRL+ALT+t]
+delay(1500)
+echo "hello from BadUSB"
+[ENTER]
+```
