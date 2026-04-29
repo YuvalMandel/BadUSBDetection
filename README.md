@@ -32,16 +32,18 @@ parent_dir/
 ### Option A — Python venv (recommended)
 
 ```bash
+# 0. Debian/Ubuntu/WSL only — install venv and pip if missing
+sudo apt update && sudo apt install -y python3-venv python3-pip
+
 # 1. Create and activate a virtual environment (Python 3.10+)
 python3 -m venv .venv
-source .venv/bin/activate        # Linux / macOS
-# .venv\Scripts\activate         # Windows
+source .venv/bin/activate        # Linux / macOS / WSL
+# .venv\Scripts\activate         # Windows (cmd/PowerShell)
 
 # 2. Install all dependencies in one step
 pip install -r requirements.txt
 
 # 3. GPU PyTorch (optional — skip if CPU-only)
-#    Replace the torch line above by running:
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 
