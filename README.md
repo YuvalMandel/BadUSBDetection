@@ -31,23 +31,34 @@ parent_dir/
 
 ### Option A — Python venv (recommended)
 
+**Windows** (cmd or PowerShell):
+```cmd
+py -3 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**Linux / macOS / WSL:**
 ```bash
-# 0. Debian/Ubuntu/WSL only — install venv and pip if missing
+# Ubuntu/Debian — install venv support if missing (requires sudo)
 sudo apt update && sudo apt install -y python3-venv python3-pip
 
-# 1. Create and activate a virtual environment (Python 3.10+)
 python3 -m venv .venv
-source .venv/bin/activate        # Linux / macOS / WSL
-# .venv\Scripts\activate         # Windows (cmd/PowerShell)
+source .venv/bin/activate
 
-# 2. Bootstrap pip into the venv (needed on Ubuntu 24.04 / Debian 12+ / WSL)
-#    Skip this step if `pip --version` already works after activation.
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+# Ubuntu 24.04 / Debian 12+ only: bootstrap pip if the venv has none
+python3 -m ensurepip --upgrade
 
-# 3. Install all dependencies in one step
 pip install -r requirements.txt
+```
 
-# 4. GPU PyTorch (optional — skip if CPU-only)
+> **Slow connection / pip timeout:** if `pip install` times out on large packages (e.g. torch), increase the timeout:
+> ```bash
+> pip install --timeout 120 -r requirements.txt
+> ```
+
+**GPU PyTorch (optional — skip if CPU-only):**
+```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 
@@ -97,33 +108,33 @@ python3 -c "from htm.bindings.sdr import SDR; print('HTM OK')"
 
 ## Running the Live Detector (existing models)
 
-Pre-trained models are already included in the repository (tracked via Git LFS):
+Pre-trained models are included in the repository via **Git LFS** (`.pth`, `.npy`, `.npz`, `.pkl` files).  
+Git LFS must be installed before cloning, otherwise the model files will be downloaded as small pointer text files instead of the actual binaries.
 
-```
-MLP/badusb_model_fullkey.pth       — MLP weights
-MLP/scaler_params_fullkey.npy      — MLP feature normalizer
-MLP/reference_pool.npz             — KS/Wasserstein reference windows
-MLP/poly_regressor.pkl             — Polynomial Fitts'-Law regressor
-results/MLP/mlp_best_hps_fullkey.json
+**Install Git LFS** (once per machine):
+- Windows: download from https://git-lfs.com and run the installer
+- Linux/WSL: `sudo apt install git-lfs`
+- macOS: `brew install git-lfs`
 
-GRU/gru_model_fullkey.pth          — GRU weights
-GRU/rnn_scaler_params_fullkey.npy  — GRU normalizer
-results/GRU/gru_best_hps_fullkey.json
-
-HTM/htm_model_fullkey.pkl          — HTM model (SP + TM + encoder + AnomalyLikelihood)
-```
-
-**Git LFS setup** (required after cloning, to download the binary model files):
+**Clone and pull LFS files:**
 
 ```bash
-git lfs install
-git lfs pull
+git lfs install                                              # enable LFS for your git
+git clone https://github.com/YuvalMandel/BadUSBDetection.git
+cd BadUSBDetection
+git lfs pull                                                 # download binary model files
 ```
+
+> If you cloned without LFS installed first, run `git lfs install` then `git lfs pull` inside the repo to download the model files retroactively.
 
 **Launch the GUI:**
 
 ```bash
+# Windows
 python BadUSBDetector/detector.py
+
+# Linux / macOS / WSL
+python3 BadUSBDetector/detector.py
 ```
 
 The GUI shows a traffic-light indicator:
