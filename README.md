@@ -246,10 +246,10 @@ HTM training uses a two-step random HP search:
 python HTM/htm_prepare_data.py --tag fullkey
 
 # 2. Generate random configs
-python HTM/htm_generate_configs.py --n-configs 128
+python HTM/htm_generate_configs.py --n-configs 128 --tag fullkey --cache HTM/windows_cache_fullkey.pkl
 
-# 3. Submit SLURM array (runs one job per config)
-sbatch slurm/fullkey_htm.sh   # or submit the generated slurm/htm_submit_array.sh
+# 3. Submit the generated SLURM array (runs one job per config)
+sbatch slurm/train_htm_fullkey_array.sh
 
 # 4. After all jobs finish, collect results and evaluate best model on test set
 python HTM/htm_collect_results.py --tag fullkey --top 20

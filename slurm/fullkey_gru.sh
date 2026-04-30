@@ -29,7 +29,7 @@ WORK="$SLURM_SUBMIT_DIR"
 echo "========================================"
 echo "Job   : $SLURM_JOB_ID"
 echo "Node  : $(hostname)"
-echo "Mode  : full | tag: fullkey | HPs from gru_best_hps.json"
+echo "Mode  : full | tag: fullkey | HPs from gru_best_hps_fullkey.json"
 echo "WORK  : $WORK"
 echo "Start : $(date)"
 echo "========================================"
@@ -51,7 +51,7 @@ python -X utf8 train_gru.py \
     --split-json "$WORK/data_split.json" \
     --mode full \
     --tag fullkey \
-    --hps-json "$WORK/results/GRU/gru_best_hps.json"
+    --hps-json "$WORK/results/GRU/gru_best_hps_fullkey.json"
 
 echo "========================================"
 echo "End : $(date)"
