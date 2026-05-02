@@ -14,7 +14,7 @@
 
 set -e
 
-ENV_NAME=htm_keyboard_1
+ENV_NAME=badusb
 export PATH="$HOME/miniconda3/envs/$ENV_NAME/bin:$HOME/anaconda3/envs/$ENV_NAME/bin:$HOME/miniconda3/bin:$HOME/anaconda3/bin:$PATH"
 source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null || source "$HOME/anaconda3/etc/profile.d/conda.sh" 2>/dev/null || true
 conda activate $ENV_NAME 2>/dev/null || true

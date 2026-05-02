@@ -83,14 +83,30 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 The HTM engine requires `htm.core`, which must be compiled from the Numenta community source.  
 Do **not** use `pip install htm.core` — the PyPI package is outdated and missing the C++ bindings.
 
+**Linux / macOS / WSL:**
 ```bash
-# Build dependencies
-# venv: pip install cmake  OR  system: sudo apt install cmake libboost-all-dev
-# conda: conda install -c conda-forge cmake boost
+# cmake via pip, or system: sudo apt install cmake
+pip install cmake
 
 git clone https://github.com/htm-community/htm.core.git
 cd htm.core
 pip install .   # compiles C++ bindings (~5–15 min)
+cd ..
+```
+
+**Windows (native):**
+
+1. Install **Visual Studio Build Tools 2022** (free):  
+   Download from https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022  
+   During install, select the **"Desktop development with C++"** workload.
+
+2. Install cmake and build (from any regular terminal — cmd, PowerShell, or VS Developer Prompt all work; cmake finds MSVC automatically via the Windows Registry):
+```cmd
+pip install cmake
+
+git clone https://github.com/htm-community/htm.core.git
+cd htm.core
+pip install .   # compiles C++ bindings (~10–20 min on Windows)
 cd ..
 ```
 
@@ -100,9 +116,16 @@ The MLP and GRU engines work without HTM — the GUI disables the HTM button gra
 ### Verify
 
 ```bash
+# Linux / macOS / WSL
 python3 -c "import torch; print('PyTorch:', torch.__version__)"
 python3 -c "from htm.bindings.sdr import SDR; print('HTM OK')"
+
+# Windows
+python -c "import torch; print('PyTorch:', torch.__version__)"
+python -c "from htm.bindings.sdr import SDR; print('HTM OK')"
 ```
+
+> **Note:** `import htm` will print a `UserWarning: pkg_resources is deprecated` message. This comes from inside htm.core itself and is harmless — the bindings work correctly.
 
 ---
 
@@ -148,7 +171,59 @@ Switch between MLP, GRU, and HTM engines at runtime using the radio buttons.
 
 ## Training on a SLURM Cluster
 
-All SLURM scripts are in `slurm/`. They assume the `htm_keyboard_1` conda environment and Newton-style paths. Adapt `ENV_NAME` and partition/account lines for your cluster.
+All SLURM scripts are in `slurm/`. They use the `badusb` conda environment and expect miniconda3 at `~/miniconda3` (or `~/anaconda3`).
+
+### Cluster Setup (first time only)
+
+**1. Create the conda environment and install dependencies** (on the login node):
+
+```bash
+conda create -n badusb python=3.10
+conda activate badusb
+pip install -r requirements.txt
+```
+
+**2. Build and install htm.core from source via SLURM**
+
+htm.core must be compiled **on a compute node**, not the login node. HPC login nodes often have an older GLIBC than compute nodes; if you compile there, the resulting `.so` will fail with `GLIBC_x.xx not found` when the job runs.
+
+```bash
+# Step 1 — clone the source (login node is fine for this):
+git clone https://github.com/htm-community/htm.core.git ~/htm.core
+
+# Step 2 — submit the build job (compiles on a compute node, ~10 min):
+mkdir -p logs
+sbatch slurm/install_htm.sh
+
+# Step 3 — after the job finishes, verify on a compute node:
+#   Check logs/install_htm_<jobid>.out — should end with "HTM OK — install successful"
+```
+
+> If you need to rebuild (e.g. after recreating the env), just resubmit `sbatch slurm/install_htm.sh`.
+
+**3. Place the UB dataset** so the repo and dataset share a parent directory:
+
+```
+parent_dir/
+    BadUSBDetection/        ← repo root (clone here)
+    UB_keystroke_dataset/
+        s0/rotation/
+        s1/rotation/
+        s2/rotation/
+```
+
+**4. Adapt the SLURM scripts** for your cluster — edit the `##SBATCH` partition/account lines in each script you use (they are double-commented by default so SLURM ignores them):
+
+```bash
+# In each slurm/*.sh, change:
+##SBATCH --partition=<partition>
+##SBATCH --account=<account>
+# to (example):
+#SBATCH --partition=gpu
+#SBATCH --account=mylab
+```
+
+---
 
 ### Full pipeline (data → train all three models)
 
@@ -178,6 +253,8 @@ sbatch slurm/fullkey_gru.sh
 # HTM (trains best config on all data)
 sbatch slurm/fullkey_htm.sh
 ```
+
+> `fullkey_htm.sh` is pre-set to `config_0002` (the best config from our search). If you ran your own HP search, check `results/HTM/leaderboard_fullkey.txt` for your best config number and edit the `--config` line in `slurm/fullkey_htm.sh` accordingly.
 
 ### Collect HTM results after HP search
 

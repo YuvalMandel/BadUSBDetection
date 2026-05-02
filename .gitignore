@@ -20,15 +20,22 @@ HTM/windows_cache*.pkl
 # ─── SLURM logs ───────────────────────────────────────────────────────────────
 logs/
 
+# ─── Python environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+
 # ─── Python cache ────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
 
-# ─── Report document (not committed) ─────────────────────────────────────────
+# ─── Local documents / archives (not committed) ──────────────────────────────
 *.docx
 *.doc
+*.pdf
+*.pptx
+*.zip
 
 # ─── OS / editor noise ───────────────────────────────────────────────────────
 .DS_Store

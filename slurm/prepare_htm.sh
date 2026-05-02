@@ -1,15 +1,20 @@
 #!/bin/bash
 # ============================================================
-# SLURM job: HTM — full training, no keystroke truncation
-#   Trains best config (cfg_0002) with unlimited keystroke windows.
-#   cd <repo-root> && sbatch slurm/fullkey_htm.sh
+# SLURM job: Build HTM windows cache (prerequisite for HP search)
+#   Runs htm_prepare_data.py, which reads data_split.json and the
+#   UB keystroke dataset. Must complete before train_htm_fullkey_array.sh
+#
+#   cd <repo-root> && sbatch slurm/prepare_htm.sh
+#   (submitted automatically by full_pipeline.sh)
 # ============================================================
-#SBATCH --job-name=htm_fullkey
-#SBATCH --output=logs/htm_fullkey_%j.out
-#SBATCH --error=logs/htm_fullkey_%j.err
-#SBATCH --cpus-per-task=8
+#SBATCH --job-name=htm_prepare
+#SBATCH --output=logs/htm_prepare_%j.out
+#SBATCH --error=logs/htm_prepare_%j.err
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=7-00:00:00
+#SBATCH --time=02:00:00
+##SBATCH --partition=<partition>
+##SBATCH --account=<account>
 
 set -e
 
@@ -24,20 +29,13 @@ WORK="$SLURM_SUBMIT_DIR"
 echo "========================================"
 echo "Job   : $SLURM_JOB_ID"
 echo "Node  : $(hostname)"
-echo "Config: cfg_0002 (best) | tag: fullkey | no keystroke limit"
+echo "Task  : HTM windows cache (tag=fullkey)"
 echo "WORK  : $WORK"
 echo "Start : $(date)"
 echo "========================================"
 
-echo "--- Building HTM windows cache (no keystroke limit) ---"
 cd "$WORK"
 python -X utf8 HTM/htm_prepare_data.py --tag fullkey
-
-echo "--- Training HTM cfg_0002 (tag=fullkey) ---"
-python -X utf8 HTM/htm_train.py \
-    --config HTM/configs/config_0002.json \
-    --cache  HTM/windows_cache_fullkey.pkl \
-    --tag    fullkey
 
 echo "========================================"
 echo "End : $(date)"
