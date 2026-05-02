@@ -37,7 +37,7 @@ echo "Start : $(date)"
 echo "========================================"
 
 # ── Step 0: symlink UB dataset s2/ (Newton only) ──────────────────────────────
-UB_S2="$WORK/../../UB_keystroke_dataset/s2"
+UB_S2="$WORK/../UB_keystroke_dataset/s2"
 if [ ! -e "$DATA/s2" ] && [ -d "$UB_S2" ]; then
     ln -s "$UB_S2" "$DATA/s2"
     echo "Created symlink: $DATA/s2 -> $UB_S2"
@@ -68,7 +68,7 @@ if [ ! -f "data_split.json" ]; then
     echo "--- Creating person-disjoint split ---"
     python -X utf8 split_persons.py \
         --bots-dir dataset_generator/Synthetic_Bots \
-        --ub-dir   "$WORK/../../UB_keystroke_dataset" \
+        --ub-dir   "$WORK/../UB_keystroke_dataset" \
         --sessions s0 s1 s2 \
         --tasks    1
 else

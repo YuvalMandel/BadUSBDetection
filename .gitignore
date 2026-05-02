@@ -9,6 +9,9 @@ dataset_generator/Balanced_Humans/
 dataset_generator/Balanced_Humans_test/
 dataset_generator/s2
 
+# ─── Machine-specific generated files ────────────────────────────────────────
+data_split.json
+
 # ─── Intermediate data files ──────────────────────────────────────────────────
 MLP/train_dataset.csv
 MLP/val_dataset.csv
