@@ -181,9 +181,6 @@ def main():
     print("Loading data...")
     with open(SPLIT_JSON) as f:
         split = json.load(f)
-    if not os.path.exists(WINDOWS_CACHE):
-        print(f"ERROR: {WINDOWS_CACHE} not found. Run htm_prepare_data.py first.")
-        sys.exit(1)
     cache_path = args.cache if args.cache else WINDOWS_CACHE
     if not os.path.exists(cache_path):
         print(f"ERROR: {cache_path} not found. Run htm_prepare_data.py first.")
