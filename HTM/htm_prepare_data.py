@@ -105,7 +105,7 @@ def main():
 
     sequences = {}
     skipped = 0
-    n_workers = mp.cpu_count()
+    n_workers = int(os.environ.get('SLURM_CPUS_PER_TASK', mp.cpu_count()))
     print(f"Generating feature sequences with {n_workers} workers...")
     with mp.Pool(
         processes=n_workers,

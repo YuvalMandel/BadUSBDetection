@@ -46,8 +46,8 @@ fi
 
 echo "Building htm.core from $HTM_SRC (this takes ~10 min)..."
 pip install cmake -q
-pip install 'setuptools<81' -q   # htm.core __init__.py uses pkg_resources (removed in setuptools 81+)
 pip install "$HTM_SRC"
+pip install 'setuptools<81' -q   # htm.core __init__.py uses pkg_resources (removed in setuptools 81+); pin after build to avoid being upgraded away
 
 echo ""
 echo "Verifying installation..."
