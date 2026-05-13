@@ -99,7 +99,7 @@ pip install cmake
 
 git clone https://github.com/htm-community/htm.core.git
 cd htm.core
-pip install .   # compiles C++ bindings (~5–15 min)
+python htm_install.py   # compiles C++ bindings (~5–15 min)
 cd ..
 ```
 
@@ -115,7 +115,7 @@ pip install cmake
 
 git clone https://github.com/htm-community/htm.core.git
 cd htm.core
-pip install .   # compiles C++ bindings (~10–20 min on Windows)
+python htm_install.py   # compiles C++ bindings (~10–20 min on Windows)
 cd ..
 ```
 
