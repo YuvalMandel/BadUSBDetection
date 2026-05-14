@@ -11,7 +11,7 @@
 #SBATCH --mem=32G
 #SBATCH --time=3-00:00:00
 #SBATCH --gres=gpu:1
-#SBATCH --exclude=galileo5
+#SBATCH --exclude=galileo5,bruno5,nlp-pro6000-1
 
 set -e
 

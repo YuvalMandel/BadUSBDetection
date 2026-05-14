@@ -14,7 +14,7 @@
 #SBATCH --mem=32G
 #SBATCH --time=08:00:00
 #SBATCH --gres=gpu:1
-#SBATCH --exclude=galileo5
+#SBATCH --exclude=galileo5,bruno5,nlp-pro6000-1
 ##SBATCH --partition=gpu           # Uncomment if GPU partition has a name
 ##SBATCH --partition=<partition>
 ##SBATCH --account=<account>
