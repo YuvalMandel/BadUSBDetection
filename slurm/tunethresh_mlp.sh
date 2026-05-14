@@ -10,6 +10,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=1:00:00
 #SBATCH --gres=gpu:1
+#SBATCH --exclude=galileo5
 
 set -e
 

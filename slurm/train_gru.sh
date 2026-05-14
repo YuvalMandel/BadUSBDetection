@@ -14,6 +14,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=24:00:00
 #SBATCH --gres=gpu:1
+#SBATCH --exclude=galileo5
 ##SBATCH --partition=<partition>
 ##SBATCH --account=<account>
 
