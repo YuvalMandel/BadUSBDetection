@@ -12,7 +12,7 @@
 #SBATCH --error=logs/mlp_%j.err
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
-#SBATCH --time=08:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=galileo5,bruno5,nlp-pro6000-1
 ##SBATCH --partition=gpu           # Uncomment if GPU partition has a name
