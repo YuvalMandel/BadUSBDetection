@@ -20,10 +20,16 @@ source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null || source "$HOME/an
 conda activate $ENV_NAME 2>/dev/null || true
 export LD_LIBRARY_PATH="$HOME/miniconda3/envs/$ENV_NAME/lib:${CONDA_PREFIX:+$CONDA_PREFIX/lib:}$LD_LIBRARY_PATH"
 
-python -c "import torch; assert torch.cuda.is_available(), 'no cuda'" 2>/dev/null || {
-    echo "Installing CUDA-enabled PyTorch (cu121)..."
-    pip install torch --index-url https://download.pytorch.org/whl/cu121 --force-reinstall -q
-}
+if ! python -c "import torch; assert torch.cuda.is_available(); torch.zeros(1).cuda()" 2>/dev/null; then
+    CC_MAJOR=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | cut -d. -f1)
+    if [ "${CC_MAJOR:-0}" -ge 12 ]; then
+        echo "Blackwell GPU detected (sm_${CC_MAJOR}x) — installing PyTorch cu128"
+        pip install torch --index-url https://download.pytorch.org/whl/cu128 -q
+    else
+        echo "Installing PyTorch cu121"
+        pip install torch --index-url https://download.pytorch.org/whl/cu121 -q
+    fi
+fi
 
 WORK="$SLURM_SUBMIT_DIR"
 

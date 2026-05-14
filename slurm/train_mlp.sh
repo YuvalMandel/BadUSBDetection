@@ -13,7 +13,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
 #SBATCH --time=08:00:00
-##SBATCH --gres=gpu:1              # Uncomment to request a GPU
+#SBATCH --gres=gpu:1
 ##SBATCH --partition=gpu           # Uncomment if GPU partition has a name
 ##SBATCH --partition=<partition>
 ##SBATCH --account=<account>
@@ -25,6 +25,17 @@ export PATH="$HOME/miniconda3/envs/$ENV_NAME/bin:$HOME/anaconda3/envs/$ENV_NAME/
 source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null || source "$HOME/anaconda3/etc/profile.d/conda.sh" 2>/dev/null || true
 conda activate $ENV_NAME 2>/dev/null || true
 export LD_LIBRARY_PATH="$HOME/miniconda3/envs/$ENV_NAME/lib:${CONDA_PREFIX:+$CONDA_PREFIX/lib:}$LD_LIBRARY_PATH"
+
+if ! python -c "import torch; assert torch.cuda.is_available(); torch.zeros(1).cuda()" 2>/dev/null; then
+    CC_MAJOR=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | cut -d. -f1)
+    if [ "${CC_MAJOR:-0}" -ge 12 ]; then
+        echo "Blackwell GPU detected (sm_${CC_MAJOR}x) — installing PyTorch cu128"
+        pip install torch --index-url https://download.pytorch.org/whl/cu128 -q
+    else
+        echo "Installing PyTorch cu121"
+        pip install torch --index-url https://download.pytorch.org/whl/cu121 -q
+    fi
+fi
 
 WORK="$SLURM_SUBMIT_DIR"
 DATA="$WORK/dataset_generator"
