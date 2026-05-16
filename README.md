@@ -340,40 +340,72 @@ parent_dir/
 
 ```bash
 cd <repo-root>
-bash slurm/full_pipeline.sh [--mode full] [--search] [--n-configs 128]
+bash slurm/full_pipeline.sh [--mlp-configs 128] [--gru-configs 128] [--htm-configs 128]
 ```
 
 Options:
-- `--mode full` — use all keystroke data (recommended; default is `partial`)
-- `--search` — run Optuna HP search for MLP and GRU (~50 trials each)
-- `--n-configs N` — number of random HTM configs to search (default 128)
+- `--mlp-configs N` — MLP HP search trials (default 128)
+- `--gru-configs N` — GRU HP search trials (default 128)
+- `--htm-configs N` — HTM random configs to search (default 128)
 
-The pipeline submits jobs with SLURM dependency chaining automatically.
+All three models use the same methodology: parallel random search where each config is an independent SLURM array task. The pipeline submits all jobs with dependency chaining automatically:
 
-### Fullkey training (best-known HPs, recommended)
+```
+Stage 1 : generate data (bots, split, polynomial regressor)
+Stage 2 : model-specific data prep — parallel
+            2a. MLP CSV feature extraction
+            2b. GRU RNN tensor generation
+            2c. HTM windows cache
+Stage 3 : 128-job HP search arrays — parallel across all three models
+Stage 4 : collect results, pick best HPs — parallel
+Stage 5 : final training with best HPs (MLP + GRU)
+```
 
-If you already have HP search results:
+HP config files for MLP and GRU are generated on the login node at the start of the script (fast, no GPU). HTM configs are generated the same way.
+
+### Standalone HP search (per model)
+
+To run HP search for a single model without the full pipeline:
+
+**MLP:**
+```bash
+# Prerequisites: generate_data.sh done + CSVs exist (or run prep_mlp_data.sh)
+python MLP/generate_mlp_configs.py          # creates results/MLP/hp_trials/
+sbatch slurm/hpsearch_mlp_array.sh         # 128 parallel trials
+# after array finishes:
+sbatch slurm/collect_mlp.sh                # writes results/MLP/mlp_best_hps_fullkey.json
+sbatch slurm/fullkey_mlp.sh                # final training with best HPs
+```
+
+**GRU:**
+```bash
+# Prerequisites: generate_data.sh done + tensors exist (or run prep_gru_data.sh)
+python GRU/generate_gru_configs.py          # creates results/GRU/hp_trials/
+sbatch slurm/hpsearch_gru_array.sh         # 128 parallel trials
+# after array finishes:
+sbatch slurm/collect_gru.sh                # writes results/GRU/gru_best_hps_fullkey.json
+sbatch slurm/fullkey_gru.sh                # final training with best HPs
+```
+
+**HTM:**
+```bash
+sbatch slurm/prepare_htm.sh                # builds windows cache (prereq: generate_data.sh done)
+python HTM/htm_generate_configs.py --n-configs 128 --tag fullkey --cache HTM/windows_cache_fullkey.pkl
+sbatch slurm/train_htm_fullkey_array.sh    # 128 parallel trials
+sbatch slurm/collect_htm_fullkey.sh        # writes leaderboard + evaluates best on test set
+```
+
+### Final training only (best-known HPs already found)
+
+If you already have `*_best_hps_fullkey.json` from a previous search:
 
 ```bash
-# MLP
-sbatch slurm/fullkey_mlp.sh
-
-# GRU
-sbatch slurm/fullkey_gru.sh
-
-# HTM (trains best config on all data)
-sbatch slurm/fullkey_htm.sh
+sbatch slurm/fullkey_mlp.sh   # MLP final training
+sbatch slurm/fullkey_gru.sh   # GRU final training
+sbatch slurm/fullkey_htm.sh   # HTM best config (see note below)
 ```
 
 > `fullkey_htm.sh` is pre-set to `config_0002` (the best config from our search). If you ran your own HP search, check `results/HTM/leaderboard_fullkey.txt` for your best config number and edit the `--config` line in `slurm/fullkey_htm.sh` accordingly.
-
-### Collect HTM results after HP search
-
-```bash
-sbatch slurm/collect_htm_fullkey.sh
-```
-
-This evaluates all completed HTM configs, ranks them, and writes `results/HTM/leaderboard_fullkey.txt`.
 
 ---
 

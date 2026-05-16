@@ -395,8 +395,9 @@ def run_trial_mode(args):
     with open(args.trial_config) as fh:
         cfg = json.load(fh)
     trial_idx = cfg["trial_idx"]
+    tag_suffix = f"_{args.tag}" if args.tag else ""
 
-    hp_results_dir = os.path.join(RESULTS_DIR, "hp_results")
+    hp_results_dir = os.path.join(RESULTS_DIR, f"hp_results_{args.mode}{tag_suffix}")
     os.makedirs(hp_results_dir, exist_ok=True)
     result_path = os.path.join(hp_results_dir, f"trial_{trial_idx:04d}.json")
     if os.path.exists(result_path):
@@ -445,7 +446,7 @@ def run_trial_mode(args):
 def collect_mode(args):
     import glob as _glob
     tag_suffix = f"_{args.tag}" if args.tag else ""
-    hp_results_dir = os.path.join(RESULTS_DIR, "hp_results")
+    hp_results_dir = os.path.join(RESULTS_DIR, f"hp_results_{args.mode}{tag_suffix}")
     files = sorted(_glob.glob(os.path.join(hp_results_dir, "trial_*.json")))
     if not files:
         print(f"No trial results in {hp_results_dir}"); return
