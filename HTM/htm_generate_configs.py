@@ -149,7 +149,7 @@ def main():
     parser.add_argument("--seed", type=int, default=0, help="RNG seed")
     parser.add_argument("--cache", default="", help="Windows cache path to embed in SLURM script (e.g. HTM/windows_cache_fullkey.pkl)")
     parser.add_argument("--tag", default="", help="Output tag to embed in SLURM script (e.g. fullkey)")
-    parser.add_argument("--time", default="08:00:00", dest="time_limit", help="SLURM time limit per job (default: 08:00:00)")
+    parser.add_argument("--time", default="16:00:00", dest="time_limit", help="SLURM time limit per job (default: 16:00:00)")
     args = parser.parse_args()
 
     configs_dir = os.path.join(_here, "configs")

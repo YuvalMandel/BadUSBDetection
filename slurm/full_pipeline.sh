@@ -70,7 +70,8 @@ echo "Generating $HTM_CONFIGS HTM configs..."
 "$PYTHON" HTM/htm_generate_configs.py \
     --n-configs "$HTM_CONFIGS" \
     --tag fullkey \
-    --cache HTM/windows_cache_fullkey.pkl
+    --cache HTM/windows_cache_fullkey.pkl \
+    --time 16:00:00
 echo "HTM array script: slurm/train_htm_fullkey_array.sh"
 
 # ── Step 1: Generate all shared data ──────────────────────────────────────────
@@ -109,19 +110,19 @@ JOB_HTM_SEARCH=$(sbatch --parsable \
     slurm/train_htm_fullkey_array.sh)
 echo "Step 3c  — HTM HP search      : array $JOB_HTM_SEARCH (${HTM_CONFIGS} tasks)"
 
-# ── Step 4: Collect results (depend on arrays finishing) ──────────────────────
+# ── Step 4: Collect results (afterany = run even if some array tasks failed) ───
 JOB_MLP_COLLECT=$(sbatch --parsable \
-    --dependency=afterok:$JOB_MLP_SEARCH \
+    --dependency=afterany:$JOB_MLP_SEARCH \
     slurm/collect_mlp.sh)
 echo "Step 4a  — MLP collect        : job $JOB_MLP_COLLECT"
 
 JOB_GRU_COLLECT=$(sbatch --parsable \
-    --dependency=afterok:$JOB_GRU_SEARCH \
+    --dependency=afterany:$JOB_GRU_SEARCH \
     slurm/collect_gru.sh)
 echo "Step 4b  — GRU collect        : job $JOB_GRU_COLLECT"
 
 JOB_HTM_COLLECT=$(sbatch --parsable \
-    --dependency=afterok:$JOB_HTM_SEARCH \
+    --dependency=afterany:$JOB_HTM_SEARCH \
     slurm/collect_htm_fullkey.sh)
 echo "Step 4c  — HTM collect        : job $JOB_HTM_COLLECT"
 
